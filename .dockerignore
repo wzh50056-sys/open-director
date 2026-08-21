@@ -1,0 +1,33 @@
+.git
+.next
+dist
+node_modules
+coverage
+*.tsbuildinfo
+.env
+.env.local
+uploads
+cache
+output
+mysql-data
+redis-data
+minio-data
+apps/*/.next
+apps/*/dist
+apps/*/node_modules
+apps/*/*.tsbuildinfo
+
+# Local archives, screenshots, generated documents, and backup projects are not build inputs.
+*.zip
+/*.png
+/*.jpg
+/*.jpeg
+/*.docx
+.DS_Store
+.mysql-data-runtime-80
+open-director/
+open-director-cover/
+未命名文件夹/
+
+# The canvas runtime is integrated under apps/web/src/features; its source checkout is not built.
+apps/infinite-canvas/

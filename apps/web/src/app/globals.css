@@ -1,0 +1,393 @@
+@import "tailwindcss";
+@import "animate.css";
+@import "@heroui/styles";
+@import "../features/infinite-canvas/canvas.css";
+@source "../features/infinite-canvas";
+
+:root {
+  --font-display: "Inter", "Aptos", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Aptos", "Segoe UI", sans-serif;
+  --background: 222 47% 4%;
+  --foreground: 210 40% 98%;
+  --card: 222 31% 8%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 31% 8%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 24.6 95% 53.1%;
+  --primary-foreground: 60 9.1% 97.8%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 263 70% 64%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 263 70% 64%;
+  --radius: 0.5rem;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ink: #05060a;
+  --color-paper: #ffffff;
+  --color-ember: #ff7a2f;
+  --color-moss: #2dd4bf;
+  --color-cyanite: #6d5dfc;
+  --color-steel: #94a3b8;
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --shadow-brutal: 0 24px 70px rgb(15 23 42 / 0.45);
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes route-progress {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+.marquee-track {
+  animation: marquee var(--duration, 40s) linear infinite;
+  will-change: transform;
+}
+
+.marquee-track-vertical {
+  animation: marquee-vertical var(--duration, 40s) linear infinite;
+  will-change: transform;
+}
+
+.marquee-pause-on-hover:hover > .marquee-track,
+.marquee-pause-on-hover:hover > .marquee-track-vertical {
+  animation-play-state: paused;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #05060a;
+  color: #f8fafc;
+  font-family: var(--font-body);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
+.app-background {
+  background:
+    linear-gradient(135deg, rgba(255, 122, 47, 0.16), transparent 28%),
+    linear-gradient(225deg, rgba(109, 93, 252, 0.22), transparent 34%),
+    linear-gradient(180deg, #080a12 0%, #05060a 48%, #0b0d14 100%);
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.055)
+  );
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+@keyframes market-drawer-in {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes director-stage-in {
+  from {
+    opacity: 0;
+    transform: scale(1.025);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes director-copy-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.director-stage-content {
+  animation: director-stage-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.director-stage-copy {
+  animation: director-copy-in 380ms 40ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.market-drawer {
+  animation: market-drawer-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.feature-motion-card {
+  --feature-accent: #22d3ee;
+  --feature-delay: 0s;
+  border-color: color-mix(in srgb, var(--feature-accent) 45%, transparent);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.36),
+    0 0 0 1px color-mix(in srgb, var(--feature-accent) 12%, transparent);
+  isolation: isolate;
+  opacity: 1;
+  transition:
+    border-color 300ms ease,
+    box-shadow 300ms ease,
+    transform 300ms ease;
+}
+
+.feature-motion-card:hover {
+  border-color: color-mix(in srgb, var(--feature-accent) 78%, transparent);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.45),
+    0 0 34px color-mix(in srgb, var(--feature-accent) 24%, transparent);
+  transform: translateY(-5px);
+}
+
+.feature-motion-image {
+  transition:
+    transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 500ms ease;
+}
+
+.feature-motion-card:hover .feature-motion-image {
+  animation: feature-breathe 5.4s ease-in-out infinite;
+  animation-delay: var(--feature-delay);
+  filter: saturate(1.18) contrast(1.05);
+}
+
+.feature-motion-glow {
+  position: absolute;
+  inset: -35%;
+  z-index: 1;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 64%,
+    color-mix(in srgb, var(--feature-accent) 42%, transparent) 74%,
+    transparent 84%
+  );
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.feature-motion-scan {
+  position: absolute;
+  inset: -20% 0 auto;
+  z-index: 2;
+  height: 38%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--feature-accent) 32%, transparent),
+    transparent
+  );
+  filter: blur(5px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.feature-motion-orbit {
+  position: absolute;
+  inset: 13%;
+  z-index: 3;
+  border: 1px solid color-mix(in srgb, var(--feature-accent) 28%, transparent);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.feature-motion-orbit span {
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--feature-accent);
+  box-shadow: 0 0 14px 4px var(--feature-accent);
+}
+
+.feature-motion-badge {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 4;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--feature-accent) 48%, transparent);
+  border-radius: 999px;
+  color: white;
+  background: color-mix(
+    in srgb,
+    var(--feature-accent) 25%,
+    rgba(2, 6, 23, 0.72)
+  );
+  box-shadow: 0 0 22px
+    color-mix(in srgb, var(--feature-accent) 35%, transparent);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.feature-motion-card:hover .feature-motion-glow {
+  opacity: 1;
+  animation: feature-spin 7s linear infinite;
+  animation-delay: var(--feature-delay);
+}
+
+.feature-motion-card:hover .feature-motion-scan {
+  animation: feature-scan 3.8s ease-in-out infinite;
+  animation-delay: var(--feature-delay);
+}
+
+.feature-motion-card:hover .feature-motion-orbit {
+  opacity: 0.68;
+  animation: feature-spin 9s linear infinite reverse;
+  animation-delay: var(--feature-delay);
+}
+
+.feature-motion-card:hover .feature-motion-badge {
+  animation: feature-pulse 2.5s ease-in-out infinite;
+  animation-delay: var(--feature-delay);
+}
+
+@keyframes feature-breathe {
+  0%,
+  100% {
+    transform: scale(1.01);
+  }
+  50% {
+    transform: scale(1.065);
+  }
+}
+
+@keyframes feature-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes feature-scan {
+  0%,
+  14% {
+    transform: translateY(-25%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.9;
+  }
+  72%,
+  100% {
+    transform: translateY(350%);
+    opacity: 0;
+  }
+}
+
+@keyframes feature-pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .market-drawer {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .director-stage-content,
+  .director-stage-copy {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .feature-motion-image,
+  .feature-motion-card,
+  .feature-motion-glow,
+  .feature-motion-scan,
+  .feature-motion-orbit,
+  .feature-motion-badge {
+    animation: none;
+  }
+
+  .feature-motion-card {
+    opacity: 1;
+  }
+}
+
+@keyframes icon-cloud-float {
+  0%,
+  100% {
+    margin-top: -24px;
+  }
+  50% {
+    margin-top: -31px;
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "open-director",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20 <26"
+  },
+  "scripts": {
+    "dev": "sh scripts/dev-with-mysql.sh",
+    "dev:web": "pnpm --filter @open-director/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm --filter @open-director/web lint",
+    "db:generate": "pnpm --filter @open-director/web db:generate",
+    "db:migrate": "pnpm --filter @open-director/web db:migrate",
+    "worker": "pnpm --filter @open-director/render worker",
+    "render:dev": "pnpm --filter @open-director/render dev"
+  },
+  "devDependencies": {
+    "@prisma/client": "5.22.0",
+    "prisma": "5.22.0",
+    "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@ffmpeg-installer/linux-arm64",
+      "@ffmpeg-installer/linux-x64",
+      "@ffprobe-installer/linux-arm64",
+      "@ffprobe-installer/linux-x64",
+      "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
+      "@swc/core",
+      "canvas",
+      "esbuild",
+      "gl",
+      "msgpackr-extract",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}
