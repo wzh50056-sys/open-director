@@ -1,0 +1,55 @@
+name: open-director
+
+x-app: &app
+  init: true
+  restart: unless-stopped
+  env_file:
+    - ${ENV_FILE:-.env.prod}
+  networks:
+    - app
+
+services:
+  migrate:
+    <<: *app
+    image: ghcr.io/wzh50056-sys/open-director-migrate:${IMAGE_TAG:-latest}
+    restart: "no"
+
+  web:
+    <<: *app
+    image: ghcr.io/wzh50056-sys/open-director-web:${IMAGE_TAG:-latest}
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>{if(r.status>=500)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  worker:
+    <<: *app
+    image: ghcr.io/wzh50056-sys/open-director-worker:${IMAGE_TAG:-latest}
+    command: ["xvfb-run", "-a", "-s", "-ac -screen 0 1280x1024x24", "pnpm", "-C", "/app/apps/render", "worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 2m
+
+  nginx:
+    image: ghcr.io/wzh50056-sys/open-director-nginx:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge

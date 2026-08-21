@@ -1,0 +1,88 @@
+name: Build and publish production images
+
+on:
+  push:
+    branches:
+      - production-latest
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-images:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            target: web-runner
+          - name: worker
+            target: render-runner
+          - name: migrate
+            target: migrate-runner
+    steps:
+      - name: Checkout source and Git LFS files
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ${{ matrix.target }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/open-director-${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/open-director-${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  nginx-image:
+    name: Build nginx
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish nginx
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./deploy/Dockerfile.nginx
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/open-director-nginx:latest
+            ghcr.io/${{ github.repository_owner }}/open-director-nginx:${{ github.sha }}
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
+
