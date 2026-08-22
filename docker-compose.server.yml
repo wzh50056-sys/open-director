@@ -1,0 +1,172 @@
+name: open-director
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  HOSTNAME: 0.0.0.0
+  PORT: "3000"
+  NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+  SESSION_SECRET: ${SESSION_SECRET}
+  DATABASE_URL: mysql://${MYSQL_USER:-opendirector}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-opendirector}
+  DIRECT_URL: mysql://${MYSQL_USER:-opendirector}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-opendirector}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_BUCKET: ${S3_BUCKET:-open-director}
+  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-opendirector}
+  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  S3_FORCE_PATH_STYLE: "true"
+  RENDER_QUEUE_NAME: ${RENDER_QUEUE_NAME:-open-director-render}
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  WAVESPEED_API_KEY: ${WAVESPEED_API_KEY:-}
+  PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+  PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
+  BATCH_TTS_PROVIDER: ${BATCH_TTS_PROVIDER:-edge}
+  BATCH_EDGE_TTS_VOICE: ${BATCH_EDGE_TTS_VOICE:-zh-CN-XiaoxiaoNeural}
+
+x-app-service: &app-service
+  init: true
+  restart: unless-stopped
+  environment: *app-environment
+  networks:
+    - backend
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-opendirector}
+      MYSQL_USER: ${MYSQL_USER:-opendirector}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-opendirector}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_BIND_ADDRESS:-0.0.0.0}:${MINIO_API_PORT:-9100}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9101}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - backend
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    restart: "no"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-opendirector}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-open-director}
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "local/$${S3_BUCKET}"
+        mc anonymous set download "local/$${S3_BUCKET}"
+    networks:
+      - backend
+
+  migrate:
+    <<: *app-service
+    image: ghcr.io/wzh50056-sys/open-director-migrate:${IMAGE_TAG:-latest}
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    <<: *app-service
+    image: ghcr.io/wzh50056-sys/open-director-web:${IMAGE_TAG:-latest}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>{if(r.status>=500)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  worker:
+    <<: *app-service
+    image: ghcr.io/wzh50056-sys/open-director-worker:${IMAGE_TAG:-latest}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    stop_grace_period: 2m
+
+  nginx:
+    image: ghcr.io/wzh50056-sys/open-director-nginx:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:
